@@ -18,6 +18,9 @@ fi
 LH_HEADER=$(grep -v "^#" "$SAMPLE_FILE" | awk '{print "LH_" $5}' | paste -sd ",")
 RH_HEADER=$(grep -v "^#" "$SAMPLE_FILE" | awk '{print "RH_" $5}' | paste -sd ",")
 
+# Create the "NA" string for missing subjects (Count regions * 2 for both hemispheres)
+NA_STRING=$(yes "NA" | head -n $(($(grep -c -v "^#" "$SAMPLE_FILE") * 2)) | paste -sd ",")
+
 # Write the header row: SubjectID followed by LH columns and RH columns
 echo "SubjectID,${LH_HEADER},${RH_HEADER}" > "$OUTPUT_FILE"
 
@@ -44,7 +47,8 @@ for dir in */ ; do
         echo "${SUBJ_ID},${LH_DATA},${RH_DATA}" >> "$OUTPUT_FILE"
         echo "Processed: $SUBJ_ID"
     else
-        echo "Skipping $SUBJ_ID: Stats files missing."
+        echo "${SUBJ_ID},${NA_STRING}" >> "$OUTPUT_FILE"
+        echo "Stats files missing: $SUBJ_ID"
     fi
 done
 
