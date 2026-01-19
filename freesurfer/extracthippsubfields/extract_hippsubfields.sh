@@ -4,11 +4,11 @@
 OUTPUT_FILE="hippocampal_subfields.csv"
 
 # 1. GENERATE HEADER
-# Find one valid file to extract the region names from
-SAMPLE_FILE=$(find . -maxdepth 3 -name "hipposubfields.lh.T1.v22.stats" | head -n 1)
+# Find the latest valid file (v21 if using FS 7.1.1, v22 if using FS 7.4.1) to extract the region names from
+SAMPLE_FILE=$(find . -maxdepth 3 -name "hipposubfields.lh.T1.v*.stats" | sort -r | head -n 1)
 
 if [ -z "$SAMPLE_FILE" ]; then
-    echo "Error: No stats files found in subdirectories."
+    echo "Error: No hippocampal stats files found in subdirectories."
     exit 1
 fi
 
@@ -25,24 +25,22 @@ NA_STRING=$(yes "NA" | head -n $(($(grep -c -v "^#" "$SAMPLE_FILE") * 2)) | past
 echo "SubjectID,${LH_HEADER},${RH_HEADER}" > "$OUTPUT_FILE"
 
 # 2. PROCESS PARTICIPANTS
-# Loop through each directory in the current location
 for dir in */ ; do
-    # Remove trailing slash to get subject ID
     SUBJ_ID=$(basename "$dir")
     
     # Define paths to the specific stats files
-    LH_FILE="${dir}stats/hipposubfields.lh.T1.v22.stats"
-    RH_FILE="${dir}stats/hipposubfields.rh.T1.v22.stats"
+    LH_FILE=$(find "${dir}stats" -maxdepth 1 -name "hipposubfields.lh.T1.v*.stats" | sort -r | head -n 1)
+    RH_FILE=$(find "${dir}stats" -maxdepth 1 -name "hipposubfields.rh.T1.v*.stats" | sort -r | head -n 1)
 
     # Check if both files exist for this participant
-    if [[ -f "$LH_FILE" && -f "$RH_FILE" ]]; then
+    if [[ -n "$LH_FILE" && -n "$RH_FILE" ]]; then
         
         # Extract the 4th column (Volumes) for Left Hemisphere
         LH_DATA=$(grep -v "^#" "$LH_FILE" | awk '{print $4}' | paste -sd ",")
-        
+
         # Extract the 4th column (Volumes) for Right Hemisphere
         RH_DATA=$(grep -v "^#" "$RH_FILE" | awk '{print $4}' | paste -sd ",")
-        
+
         # Append to CSV
         echo "${SUBJ_ID},${LH_DATA},${RH_DATA}" >> "$OUTPUT_FILE"
         echo "Processed: $SUBJ_ID"
